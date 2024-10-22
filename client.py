@@ -117,7 +117,7 @@ class PauseMenu:
     def __init__(self, game):
         """Create the menu"""
         #self.root = Tk()
-        root.geometry('275x125')
+        root.geometry('550x250')
         self.game = game
         self.current_name = StringVar()
         self.populate()
@@ -185,6 +185,9 @@ class PauseMenu:
 
         root.destroy()
 
+    def api(self):
+        print("Placeholder")
+
     def populate(self):
         """
         Create the menu and its widgets
@@ -198,7 +201,7 @@ class PauseMenu:
 
         naming_frame = ttk.Frame(frame)
         naming_frame.pack()
-        ttk.Label(naming_frame, text = "Display Name: ").pack(side=tkinter.LEFT)
+        ttk.Label(naming_frame, text = "Display Nssame: ").pack(side=tkinter.LEFT)
         naming_entry = Entry(naming_frame, width=25, textvariable=self.current_name)
         naming_entry.pack(side=tkinter.LEFT)
 
@@ -209,6 +212,7 @@ class PauseMenu:
         buttons_frame.pack(pady=5)
         ttk.Button(buttons_frame, text='Play', command=self.send_name).pack(side=tkinter.LEFT, padx=3)
         ttk.Button(buttons_frame, text='Quit', command=self.quit).pack(side=tkinter.LEFT, padx=3)
+        ttk.Button(buttons_frame, text='API Call', command=self.api).pack(side=tkinter.LEFT, padx=3)
 
 class Game():
     """
