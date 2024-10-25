@@ -1,4 +1,6 @@
 import pygame
+from pygame.locals import *
+import requests
 from random import randint
 from math import floor as flr
 import tkinter
@@ -12,6 +14,54 @@ CELL = 10
 SPEED = CELL
 COLS = BOARD[0]/CELL
 ROWS = BOARD[1]/CELL
+
+# Initialize Pygame
+pygame.init()
+screen = pygame.display.set_mode((800, 600))
+pygame.display.set_caption("Snake Hunt with Weather")
+
+# Font for displaying weather
+font = pygame.font.Font(None, 36)
+
+# API key and Philadelphia coordinates
+api_key = "107cd37d3c6ad486416c606e0110450e"
+lat, lon = 39.952583, -75.165222  # Philadelphia coordinates
+
+def get_weather(api_key, lat, lon):
+    url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=imperial"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Check if the request was successful
+        weather_data = response.json()
+        temperature = weather_data['main']['temp']
+        humidity = weather_data['main']['humidity']
+        description = weather_data['weather'][0]['description']
+        return f"Philadelphia: {temperature}°F, Humidity: {humidity}%, {description.capitalize()}"
+    except requests.exceptions.RequestException as e:
+        return f"Error fetching weather data: {e}"
+
+# Fetch the initial weather data
+weather_text = get_weather(api_key, lat, lon)
+
+def display_weather():
+    # Render the weather text to display on the game screen
+    weather_surface = font.render(weather_text, True, (255, 255, 255))
+    screen.blit(weather_surface, (10, 10))
+
+# Main game loop
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == QUIT: #if user closes the window
+            running = False
+
+    screen.fill((0, 0, 0))  # Clear screen
+    display_weather()  # Display weather on screen
+
+    pygame.display.flip() #This command updates the entire display with the new frame
+
+pygame.quit()
+
 
 class Player():
     def __init__(self, name, snake):
