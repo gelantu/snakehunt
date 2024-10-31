@@ -6,12 +6,13 @@ from pygame.time import Clock
 from gamedata import *
 from socket import SHUT_RDWR
 
-BOARD = (1000,1000)
+BOARD = (1000, 1000)
 CELL = 10
 SPEED = 10
 COLS = BOARD[0]/CELL
 ROWS = BOARD[1]/CELL
 MAX_NAME_LENGTH = 32
+
 
 class Player():
     """
@@ -21,13 +22,13 @@ class Player():
     ----------
     id (int):
         A unique identifyer
-    
+
     snake (Snake):
         The player's snake
 
     socket (socket.socket):
         Player's connection
-    
+
     name (str):
         Keeps track of the current name entered by user
     """
@@ -38,6 +39,7 @@ class Player():
         self.snake = snake
         self.socket = socket
         self.name = None
+        self.snake_skin = None
 
     def set_name(self, name):
         """
@@ -53,6 +55,46 @@ class Player():
         None
         """
         self.name = name
+
+    def set_skin(self, skin):
+        """
+        Set the snake skin 
+
+        Parameters
+        ----------
+        skin (str):
+            The color to get
+
+        Return 
+        ------
+        None
+        """
+        self.snake_skin = skin
+        self.snake.color = self.get_snake_color(skin)
+        self.snake.update_body_color()
+
+    def get_snake_color(self, skin):
+        """
+        Values for player selection for snake skin 
+
+        Parameters:
+        -----------
+            colors(str):
+                Color values 
+
+        Return
+        ------
+        Defualt color if no selection
+        """
+        colors = {
+            "Green": (0, 255, 0),
+
+
+            "Silver": (192, 192, 192),
+            "Golden": (255, 215, 0)
+        }
+        return colors.get(skin, (192, 192, 192))
+
 
 class BodyPart():
     """
@@ -79,6 +121,7 @@ class BodyPart():
     """
 
     width = CELL
+
     def __init__(self, position, xdir, ydir, color):
         """Create body part."""
         self.position = position
@@ -112,8 +155,10 @@ class BodyPart():
         ------
         None
         """
-        self.position = (self.position[0] + SPEED * self.xdir, self.position[1] + SPEED * self.ydir)    
-    
+        self.position = (
+            self.position[0] + SPEED * self.xdir, self.position[1] + SPEED * self.ydir)
+
+
 class Snake():
     """
     A class representing a snake game object.
@@ -122,7 +167,7 @@ class Snake():
     ----------
     bounds (tuple[int, int, int, int]):
         Borders of the playable area. Left, right, up and down respectively
-    
+
     color (tuple[int, int, int]):
         Initial color of the snake in RGB
 
@@ -134,7 +179,7 @@ class Snake():
 
     length (int):
         Initial length of the snake
-    
+
     Methods
     -------
     initialize(position, xdir, ydir)
@@ -147,19 +192,37 @@ class Snake():
     collides_position(position)
     cook()
     get_visible_bodyparts(camera, camera_target)
+    update_body_color(self)
     """
 
     MAX_INVINCIBLE_LENGTH = 3
     INITIAL_LENGTH = 1
+
     def __init__(self, position, length, xdir, ydir, bounds):
         """Create snake."""
         self.bounds = bounds
         self.color = RandomPellets.val_1[0]
         self.body = []
         self.turns = {}
-        if length < 1: length = 1
+        if length < 1:
+            length = 1
         self.length = length
         self.initialize(position, xdir, ydir)
+
+    def update_body_color(self):
+        """"
+        Update the color of the snake 
+
+        Parameters
+        ----------
+            body(tuple[int,int]):
+                body parts of snake 
+        Return 
+        -----
+        None
+        """
+        for part in self.body:
+            part.color = self.color
 
     def initialize(self, position, xdir, ydir):
         """
@@ -211,7 +274,7 @@ class Snake():
         self.turns = {}
         self.length = self.INITIAL_LENGTH
         self.initialize(position, self.head.xdir, self.head.ydir)
-        
+
     def change_direction(self, direction):
         """
         Change snake's head's direction.
@@ -225,15 +288,17 @@ class Snake():
         ------
         None
         """
-        if direction == None: return
+        if direction == None:
+            return
 
         if self.head.xdir != -direction[0] or self.head.ydir != -direction[1]:
             if self.head.xdir != -direction[0]:
                 self.head.xdir = direction[0]
             if self.head.ydir != -direction[1]:
                 self.head.ydir = direction[1]
-            self.turns[self.head.position[:]] = [self.head.xdir, self.head.ydir]
-    
+            self.turns[self.head.position[:]] = [
+                self.head.xdir, self.head.ydir]
+
     def move(self):
         """
         Move each body part of the snake.
@@ -283,21 +348,24 @@ class Snake():
         size = self.length
         self.length = size + amount
         previous = self.body[size-1]
-        
+
         xdir = previous.xdir
         ydir = previous.ydir
         width = previous.width
-        
+
         for i in range(amount):
             if xdir == 1 and ydir == 0:
-                self.body.append(BodyPart((previous.position[0]-(i+1)*width,previous.position[1]), xdir, ydir, color))
+                self.body.append(BodyPart(
+                    (previous.position[0]-(i+1)*width, previous.position[1]), xdir, ydir, color))
             elif xdir == -1 and ydir == 0:
-                self.body.append(BodyPart((previous.position[0]+(i+1)*width,previous.position[1]), xdir, ydir, color))
+                self.body.append(BodyPart(
+                    (previous.position[0]+(i+1)*width, previous.position[1]), xdir, ydir, color))
             elif xdir == 0 and ydir == 1:
-                self.body.append(BodyPart((previous.position[0],previous.position[1]-(i+1)*width), xdir, ydir, color))
+                self.body.append(BodyPart(
+                    (previous.position[0], previous.position[1]-(i+1)*width), xdir, ydir, color))
             elif xdir == 0 and ydir == -1:
-                self.body.append(BodyPart((previous.position[0],previous.position[1]+(i+1)*width), xdir, ydir, color))
-    
+                self.body.append(BodyPart(
+                    (previous.position[0], previous.position[1]+(i+1)*width), xdir, ydir, color))
 
     def collides_self(self):
         """
@@ -310,10 +378,9 @@ class Snake():
         if self.is_invincible():
             return False
         for part in range(len(self.body)):
-            if self.body[part].position in list(map(lambda z:z.position,self.body[part+1:])):
+            if self.body[part].position in list(map(lambda z: z.position, self.body[part+1:])):
                 return True
         return False
-    
 
     def collides_other(self, other_snakes):
         """
@@ -335,7 +402,7 @@ class Snake():
                 if self.head.position == part.position and not snake.is_invincible():
                     return True
         return False
-        
+
     def collides_position(self, position):
         """
         Check if the snake collides with the given position.
@@ -353,7 +420,7 @@ class Snake():
             if part.position == position:
                 return True
         return False
-    
+
     def is_invincible(self):
         """
         Check if the snake cannot die.
@@ -365,7 +432,7 @@ class Snake():
         if len(self.body) <= self.MAX_INVINCIBLE_LENGTH:
             return True
         return False
-    
+
     def cook(self):
         """
         Turn the snake's body into consumable food pellets.
@@ -406,10 +473,12 @@ class Snake():
                     body_part.position,
                     body_part.color,
                     body_part.width,
-                    direction = (body_part.xdir, body_part.ydir) if body_part == self.head else None
+                    direction=(
+                        body_part.xdir, body_part.ydir) if body_part == self.head else None
                 )
             )
         return body_parts
+
 
 class Pellet():
     """
@@ -434,13 +503,14 @@ class Pellet():
 
     height (int):
         Height of pellet
-    
+
     Methods
     -------
     setRandomPos()
     getPos()
     setPos()
     """
+
     def __init__(self, color_val, is_remains=False):
         """Create pellet object."""
         self.position = self.setRandomPos()
@@ -459,7 +529,7 @@ class Pellet():
         A tuple [int, int] representing the random position
         """
         xpos = randint(1, COLS-1)*CELL
-        ypos = randint(1,ROWS-1)*CELL
+        ypos = randint(1, ROWS-1)*CELL
         return (xpos, ypos)
 
     def getPos(self):
@@ -471,8 +541,8 @@ class Pellet():
         A tuple [int, int] current position
         """
         return self.position[0], self.position[1]
-        
-    def setPos(self,xpos,ypos):
+
+    def setPos(self, xpos, ypos):
         """
         Set the pellet's position.
 
@@ -488,7 +558,8 @@ class Pellet():
         ------
         None
         """
-        self.position = [xpos,ypos]
+        self.position = [xpos, ypos]
+
 
 class RandomPellets():
     """
@@ -512,7 +583,7 @@ class RandomPellets():
 
     pellets (list):
         List of pellets
-    
+
     Methods
     -------
     setColor()
@@ -523,9 +594,9 @@ class RandomPellets():
     addPellets(pellets)
     """
 
-    val_1 = ((150,255,150), 1)
-    val_2 = ((150,150,255), 2)
-    val_3 = ((255,150,150), 3)
+    val_1 = ((150, 255, 150), 1)
+    val_2 = ((150, 150, 255), 2)
+    val_3 = ((255, 150, 150), 3)
 
     def __init__(self, numPellets):
         """Create RandomPellets object."""
@@ -536,7 +607,7 @@ class RandomPellets():
     def setColor(self):
         """
         Give the pellet a random color and value.
-    
+
         Return
         ------
         A tuple containing the color and the value
@@ -548,7 +619,7 @@ class RandomPellets():
             return self.val_2
         else:
             return self.val_1
-        
+
     def genPellets(self):
         """
         Generate pellets at random positions.
@@ -560,11 +631,12 @@ class RandomPellets():
         pellets = []
         for i in range(self.numPellets):
             pel = Pellet(self.setColor())
-            pos = self.availablePositions.pop(randint(0,len(self.availablePositions)-1))
-            pel.setPos(pos[0],pos[1])
+            pos = self.availablePositions.pop(
+                randint(0, len(self.availablePositions)-1))
+            pel.setPos(pos[0], pos[1])
             pellets.append(pel)
-        return(pellets)
-    
+        return (pellets)
+
     def setPositions(self):
         """
         Initialize all possible pellet positions
@@ -577,8 +649,8 @@ class RandomPellets():
         for i in range(flr(ROWS)):
             for j in range(flr(COLS)):
                 positions.append([i*CELL, j*CELL])
-        return(positions)
-    
+        return (positions)
+
     def getPositions(self):
         """
         Get a list of the positions of all pellets.
@@ -590,9 +662,9 @@ class RandomPellets():
         positions = []
         for pellet in self.pellets:
             positions.append(pellet.position)
-        return(positions)
-    
-    def resetPellet(self,pel):
+        return (positions)
+
+    def resetPellet(self, pel):
         """
         Remove a pellet then generate a new one at a random position.
 
@@ -607,7 +679,8 @@ class RandomPellets():
         """
 
         self.pellets.remove(pel)
-        pos = self.availablePositions.pop(randint(1,len(self.availablePositions)-1))
+        pos = self.availablePositions.pop(
+            randint(1, len(self.availablePositions)-1))
         color_val = self.setColor()
         pel2 = Pellet(color_val)
         pel2.setPos(pos[0], pos[1])
@@ -629,6 +702,7 @@ class RandomPellets():
         """
         self.pellets = self.pellets + pellets
 
+
 class Camera():
     """
     A class representing a camera.
@@ -639,7 +713,7 @@ class Camera():
     ----------
     dimensions (tuple[int, int]):
         Width and height of camera
-    
+
     Methods
     -------
     within_bounds(object_pos, target_pos)
@@ -675,10 +749,11 @@ class Camera():
         elif object_pos[0] > camera_right_edge:
             return False
         if object_pos[1] < camera_top_edge:
-             return False
+            return False
         elif object_pos[1] > camera_bottom_edge:
             return False
         return True
+
 
 class Game():
     """
@@ -688,7 +763,7 @@ class Game():
     ----------
     server (Server):
         Game server
-    
+
     players (list):
         List of current players
 
@@ -703,7 +778,7 @@ class Game():
 
     bounds (object):
         Left, right, up and down bounds of the playing field
-    
+
     Methods
     -------
     add_player(player)
@@ -714,7 +789,7 @@ class Game():
     get_random_position()
     game_loop()
     """
-    
+
     def __init__(self, server):
         """Initialize game."""
         self.server = server or None
@@ -771,7 +846,8 @@ class Game():
         """
         leaderboard = []
         for player in self.players:
-            leaderboard.append(LeaderboardEntry(player.name, player.snake.length))
+            leaderboard.append(LeaderboardEntry(
+                player.name, player.snake.length))
         leaderboard.sort(key=lambda x: x.score, reverse=True)
         if len(leaderboard) > 10:
             leaderboard = leaderboard[0:10]
@@ -796,7 +872,8 @@ class Game():
         snakes = []
         for player in self.players:
             if player != receiver_player:
-                snakes.append(player.snake.get_visible_bodyparts(self.camera, camera_target))
+                snakes.append(player.snake.get_visible_bodyparts(
+                    self.camera, camera_target))
         return snakes
 
     def get_visible_pellets(self, camera_target):
@@ -824,7 +901,7 @@ class Game():
                 )
             )
         return pellets
-    
+
     def get_random_position(self):
         """
         Get a random position within playing field that does not collide with any snake.
@@ -870,7 +947,8 @@ class Game():
                 others.remove(snake)
                 if [snake.head.position[0], snake.head.position[1]] in pos:
                     sound = comm.Message.PELLET_EATEN
-                    i = pos.index([snake.head.position[0],snake.head.position[1]])
+                    i = pos.index(
+                        [snake.head.position[0], snake.head.position[1]])
                     pellet = self.random_pellets.pellets[i]
                     if pellet.is_remains:
                         self.random_pellets.pellets.pop(i)
@@ -893,11 +971,13 @@ class Game():
             leaderboard = self.get_leaderboard()
             for player in self.players:
                 camera_target = player.snake.head.position
-                snake = player.snake.get_visible_bodyparts(self.camera, camera_target)
+                snake = player.snake.get_visible_bodyparts(
+                    self.camera, camera_target)
                 other_snakes = self.get_visible_snakes(player, camera_target)
                 pellets = self.get_visible_pellets(camera_target)
 
-                game_data = GameData(snake, other_snakes, pellets, leaderboard, sound)
+                game_data = GameData(snake, other_snakes,
+                                     pellets, leaderboard, sound)
                 game_data_serialized = pickle.dumps(game_data)
                 try:
                     self.server.send_game_data(player, game_data_serialized)
