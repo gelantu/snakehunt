@@ -6,6 +6,7 @@ from gamedata import *
 import comm
 from game import *
 
+
 class Server():
     """
     Game server
@@ -26,18 +27,21 @@ class Server():
 
     next_id (int):
         Unique ID to assign to next player
-    
+
     Methods
     -------
     start()
     listen()
     receive_name(player)
+    recieve_skin(self, player)
     receive_input(player)
     player_handler(player)
     send_game_data(player, game_data_serialized)
     on_exit()
     listen_exit()
+    recieve_skin(self, player)
     """
+
     def __init__(self):
         """Initialize server."""
         self.game = Game(self)
@@ -45,7 +49,7 @@ class Server():
         self.port = 5555
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.next_id = 0
-        
+
     def start(self):
         """
         Start listening for connections and start game loop
@@ -79,7 +83,8 @@ class Server():
             print("Connected to:", addr)
 
             position = self.game.get_random_position()
-            snake = Snake(position, Snake.INITIAL_LENGTH, 1, 0, self.game.bounds)
+            snake = Snake(position, Snake.INITIAL_LENGTH,
+                          1, 0, self.game.bounds)
             player = Player(self.next_id, snake, sock)
             self.next_id = self.next_id + 1
 
@@ -99,7 +104,8 @@ class Server():
         True if the name was accepted, False if the player quits.
         """
         while True:
-            input_size_as_bytes = comm.receive_data(player.socket, comm.MSG_LEN)
+            input_size_as_bytes = comm.receive_data(
+                player.socket, comm.MSG_LEN)
             input_size = comm.to_int(input_size_as_bytes)
             input = pickle.loads(comm.receive_data(player.socket, input_size))
 
@@ -134,6 +140,25 @@ class Server():
                 comm.send_data(player.socket, size_as_bytes)
                 comm.send_data(player.socket, max_length)
 
+    def recieve_skin(self, player):
+        """
+        Recieve chosen skin from player.
+
+        Parameters
+        ---------
+        player (Player):
+            The player to listen to
+
+        Return
+        ------
+        None
+        """
+        skin_size_as_bytes = comm.receive_data(player.socket, comm.MSG_LEN)
+        skin_size = comm.to_int(skin_size_as_bytes)
+        snake_skin = pickle.loads(comm.receive_data(player.socket, skin_size))
+
+        player.set_skin(snake_skin)
+
     def receive_input(self, player):
         """
         Receive directional input or quit signal from player.
@@ -151,9 +176,11 @@ class Server():
         """
         while self.game.running:
             try:
-                input_size_as_bytes = comm.receive_data(player.socket, comm.MSG_LEN)
+                input_size_as_bytes = comm.receive_data(
+                    player.socket, comm.MSG_LEN)
                 input_size = comm.to_int(input_size_as_bytes)
-                input = pickle.loads(comm.receive_data(player.socket, input_size))
+                input = pickle.loads(
+                    comm.receive_data(player.socket, input_size))
             except:
                 self.game.remove_player(player)
                 break
@@ -175,7 +202,10 @@ class Server():
         ------
         None
         """
-        if not self.receive_name(player): return
+        if not self.receive_name(player):
+            return
+
+        self.recieve_skin(player)
         self.game.add_player(player)
         self.receive_input(player)
 
@@ -216,7 +246,7 @@ class Server():
 
         terminator_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         terminator_socket.connect((self.host, self.port))
-        
+
     def listen_exit(self):
         """
         Prompt user to shutdown server.
@@ -231,11 +261,13 @@ class Server():
             if user_input.lower() == 'exit':
                 self.on_exit()
 
+
 def main():
     server = Server()
     server.start()
     Thread(target=server.listen).start()
     server.listen_exit()
+
 
 if __name__ == '__main__':
     main()

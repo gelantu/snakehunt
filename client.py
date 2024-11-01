@@ -15,6 +15,7 @@ import comm
 
 root = Tk()
 
+
 def resource_path(relative_path):
     """
     Find the full path of a resource file.
@@ -39,10 +40,11 @@ def resource_path(relative_path):
     """
     try:
         # This is just a temp directory that pyinstaller uses to store assets (images, font, etc...)
-        base = sys._MEIPASS 
+        base = sys._MEIPASS
     except:
         base = os.path.abspath(".")
     return os.path.join(base, relative_path)
+
 
 class Client():
     """
@@ -61,6 +63,7 @@ class Client():
     input_addr()
     connect()
     """
+
     def __init__(self):
         """Initialize a TCP socket"""
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -75,7 +78,7 @@ class Client():
     def connect(self):
         """
         Connect to the currently stored address
-        
+
         Return
         ------
         True if connection succeeded, False otherwise.
@@ -86,6 +89,7 @@ class Client():
         except:
             print('Connection failed')
             return False
+
 
 class PauseMenu:
     """
@@ -102,7 +106,7 @@ class PauseMenu:
     ----------
     game (Game):
         A reference to the game object
-    
+
     current_name (tkinter.StringVar):
         Keeps track of the current name entered by user
 
@@ -117,9 +121,10 @@ class PauseMenu:
     def __init__(self, game):
         """Create the menu"""
         #self.root = Tk()
-        root.geometry('275x125')
+        root.geometry('300x300')
         self.game = game
         self.current_name = StringVar()
+
         self.populate()
         root.mainloop()
 
@@ -146,13 +151,16 @@ class PauseMenu:
             size_bytes = comm.receive_data(socket, comm.MSG_LEN)
             size = comm.to_int(size_bytes)
             max_name_length = pickle.loads(comm.receive_data(socket, size))
-            self.name_feedback.config(text=f"Max name length is {max_name_length} characters.")
+            self.name_feedback.config(
+                text=f"Max name length is {max_name_length} characters.")
         elif feedback == comm.Message.NAME_USED:
-            self.name_feedback.config(text=f"Name taken, please select another name.")
+            self.name_feedback.config(
+                text=f"Name taken, please select another name.")
 
     def send_name(self):
         """
         Send the current entered name to the server.
+        Send the selected skin to the server.
 
         Returns
         -------
@@ -165,12 +173,17 @@ class PauseMenu:
         comm.send_data(socket, size)
         comm.send_data(socket, name)
 
+        skin = pickle.dumps(self.snake_skin.get())
+        skin_size = comm.size_as_bytes(skin)
+        comm.send_data(socket, skin_size)
+        comm.send_data(socket, skin)
+
         self.receive_name_feedback()
 
     def quit(self):
         """
         Send a message to server indicating the intention to quit and then quit.
-        
+
         Returns
         -------
         None
@@ -198,17 +211,34 @@ class PauseMenu:
 
         naming_frame = ttk.Frame(frame)
         naming_frame.pack()
-        ttk.Label(naming_frame, text = "Display Name: ").pack(side=tkinter.LEFT)
-        naming_entry = Entry(naming_frame, width=25, textvariable=self.current_name)
+        ttk.Label(naming_frame, text="Display Name: ").pack(side=tkinter.LEFT)
+        naming_entry = Entry(naming_frame, width=25,
+                             textvariable=self.current_name)
         naming_entry.pack(side=tkinter.LEFT)
 
-        self.name_feedback = ttk.Label(frame, text = "")
+        self.name_feedback = ttk.Label(frame, text="")
         self.name_feedback.pack(pady=10)
 
         buttons_frame = ttk.Frame(frame)
         buttons_frame.pack(pady=5)
-        ttk.Button(buttons_frame, text='Play', command=self.send_name).pack(side=tkinter.LEFT, padx=3)
-        ttk.Button(buttons_frame, text='Quit', command=self.quit).pack(side=tkinter.LEFT, padx=3)
+
+        self.snake_skin = StringVar()
+        skin_options = ['Green', 'Silver', 'Golden']
+        self.snake_skin.set(skin_options[0])
+
+        skin_frame = ttk.Frame(frame)
+        skin_frame.pack()
+        ttk.Label(skin_frame, text="Choose Snake Skin: ").pack(
+            side=tkinter.LEFT)
+        skin_dropdown = ttk.OptionMenu(
+            skin_frame, self.snake_skin, *skin_options)
+        skin_dropdown.pack(side=tkinter.LEFT)
+
+        ttk.Button(buttons_frame, text='Play', command=self.send_name).pack(
+            side=tkinter.LEFT, padx=3)
+        ttk.Button(buttons_frame, text='Quit', command=self.quit).pack(
+            side=tkinter.LEFT, padx=3)
+
 
 class Game():
     """
@@ -253,7 +283,8 @@ class Game():
         self.client = client
         self.running = True
         self.radio = radio
-        self.leaderboard_font = pygame.font.Font(resource_path('./fonts/arial_bold.ttf'), 10)
+        self.leaderboard_font = pygame.font.Font(
+            resource_path('./fonts/arial_bold.ttf'), 10)
 
     def start(self):
         """Create the game window."""
@@ -277,7 +308,8 @@ class Game():
         top = 8
         for i, entry in enumerate(leaderboard):
             record_string = f'{i + 1}.   {entry.name}   {entry.score}'
-            record = self.leaderboard_font.render(record_string, True, (255, 255, 255))
+            record = self.leaderboard_font.render(
+                record_string, True, (255, 255, 255))
             record_rect = record.get_rect()
             record_rect.topleft = (8, top)
             self.window.blit(record, record_rect)
@@ -301,16 +333,20 @@ class Game():
         None
         """
         if head.position[0] + self.camera[0]/2 > self.board[0]:
-            off_map_width = (head.position[0] + self.camera[0]/2 - self.board[0])
-            off_map_rect = (self.camera[0] - off_map_width, 0, off_map_width, self.camera[1])
+            off_map_width = (head.position[0] +
+                             self.camera[0]/2 - self.board[0])
+            off_map_rect = (
+                self.camera[0] - off_map_width, 0, off_map_width, self.camera[1])
             pygame.draw.rect(self.window, (255, 0, 0), off_map_rect)
         elif head.position[0] - self.camera[0]/2 < 0:
             off_map_width = -(head.position[0] - self.camera[0]/2)
             off_map_rect = (0, 0, off_map_width, self.camera[1])
             pygame.draw.rect(self.window, (255, 0, 0), off_map_rect)
         if head.position[1] + self.camera[1]/2 > self.board[1]:
-            off_map_width = (head.position[1] + self.camera[1]/2 - self.board[1])
-            off_map_rect = (0, self.camera[0] - off_map_width, self.camera[0], off_map_width)
+            off_map_width = (head.position[1] +
+                             self.camera[1]/2 - self.board[1])
+            off_map_rect = (
+                0, self.camera[0] - off_map_width, self.camera[0], off_map_width)
             pygame.draw.rect(self.window, (255, 0, 0), off_map_rect)
         elif head.position[1] - self.camera[1]/2 < 0:
             off_map_width = -(head.position[1] - self.camera[1]/2)
@@ -335,28 +371,28 @@ class Game():
         ------
         None
         """
-        color = (255,0,0)
+        color = (255, 0, 0)
         x = rect[0]
         y = rect[1]
-        w = rect[2] -3
-        h = rect[3] -3 
+        w = rect[2] - 3
+        h = rect[3] - 3
         left_eye = right_eye = None
-        if head.direction[0] == 0:  #parallel to y axis
-            if head.direction[1] == 1:  #going down
+        if head.direction[0] == 0:  # parallel to y axis
+            if head.direction[1] == 1:  # going down
                 left_eye = (x + w, y + h-3, 2, 4)
                 right_eye = (x + 1, y + h-3, 2, 4)
-            else:                       #going up
-                left_eye = (x + 1 , y + 1, 2, 4)
+            else:  # going up
+                left_eye = (x + 1, y + 1, 2, 4)
                 right_eye = (x + w, y + 1, 2, 4)
-                
-        if head.direction[1] == 0:  #parallel to x axis
-            if head.direction[0] == 1:  #going right
-                left_eye = (x + w -2, y + 1, 4, 2)
+
+        if head.direction[1] == 0:  # parallel to x axis
+            if head.direction[0] == 1:  # going right
+                left_eye = (x + w - 2, y + 1, 4, 2)
                 right_eye = (x + w-2, y + h, 4, 2)
-            else:                       #going left
-                left_eye = (x + 1 , y + h, 4, 2)
+            else:  # going left
+                left_eye = (x + 1, y + h, 4, 2)
                 right_eye = (x + 1, y + 1, 4, 2)
-                
+
         pygame.draw.rect(self.window, color, left_eye)
         pygame.draw.rect(self.window, color, right_eye)
 
@@ -377,7 +413,7 @@ class Game():
             left = headRect[0] + objPos[0] - headPos[0]
             top = headRect[1] + objPos[1] - headPos[1]
             return (left, top, objWidth-2, objWidth-2)
-        
+
         snake = game_data.snake
         snakes = game_data.snakes
         pellets = game_data.pellets
@@ -386,24 +422,28 @@ class Game():
         my_head = snake[0]
 
         self.render_bounds(my_head)
-    
-        head_rect = (self.camera[0] / 2, self.camera[1] / 2, my_head.width - 2, my_head.width - 2)
+
+        head_rect = (self.camera[0] / 2, self.camera[1] /
+                     2, my_head.width - 2, my_head.width - 2)
 
         for pellet in pellets:
-            pygame.draw.rect(self.window, pellet.color, make_rect(head_rect, my_head.position, pellet.position, pellet.width))
-            
+            pygame.draw.rect(self.window, pellet.color, make_rect(
+                head_rect, my_head.position, pellet.position, pellet.width))
+
         for this_snake in snakes:
             for body_part in this_snake:
-                rect = make_rect(head_rect, my_head.position, body_part.position, body_part.width)
+                rect = make_rect(head_rect, my_head.position,
+                                 body_part.position, body_part.width)
                 pygame.draw.rect(self.window, body_part.color, rect)
                 if body_part.direction is not None:
                     self.draw_eyes(body_part, rect)
-            
+
         pygame.draw.rect(self.window, my_head.color, head_rect)
         self.draw_eyes(my_head, head_rect)
         for body_part in snake[1:]:
-            pygame.draw.rect(self.window, body_part.color, make_rect(head_rect, my_head.position, body_part.position, body_part.width))
-            
+            pygame.draw.rect(self.window, body_part.color, make_rect(
+                head_rect, my_head.position, body_part.position, body_part.width))
+
         self.show_leaderboard(game_data.leaderboard)
         pygame.display.flip()
 
@@ -454,9 +494,9 @@ class Game():
                 if event.type == pygame.QUIT:
                     msg = pickle.dumps(comm.Message.QUIT)
                     self.running = False
-            
+
             # Send input or quit signal to server
-            
+
             if msg == None:
                 msg = pickle.dumps(self.get_direction())
             comm.send_data(self.client.socket, comm.size_as_bytes(msg))
@@ -465,14 +505,16 @@ class Game():
             # If the player decided to quit, exit the game loop after notifying server
             if not self.running:
                 break
-            
+
             # Receive game data from server, use it to render
             # If an exception occurs it is likely that the server has shut down, in which case
             # we exit the client.
             try:
-                size_as_bytes = comm.receive_data(self.client.socket, comm.MSG_LEN)
+                size_as_bytes = comm.receive_data(
+                    self.client.socket, comm.MSG_LEN)
                 length = comm.to_int(size_as_bytes)
-                game_data = pickle.loads(comm.receive_data(self.client.socket, length))
+                game_data = pickle.loads(
+                    comm.receive_data(self.client.socket, length))
             except:
                 break
 
@@ -486,7 +528,8 @@ class Game():
                 self.radio.play_sound(game_data.sound)
 
         pygame.quit()
-        
+
+
 class MusicPlayer():
     """
     A class that allows for audio playback.
@@ -514,11 +557,13 @@ class MusicPlayer():
         None
         """
         pygame.mixer.init()
-        
-        self.pellet_sound = pygame.mixer.Sound(resource_path("sound/pellet_sound.mp3"))
-        self.self_collision = pygame.mixer.Sound(resource_path("sound/self_collision.mp3"))
+
+        self.pellet_sound = pygame.mixer.Sound(
+            resource_path("sound/pellet_sound.mp3"))
+        self.self_collision = pygame.mixer.Sound(
+            resource_path("sound/self_collision.mp3"))
         Thread(target=self.play_song, args=(song,)).start()
-        
+
     def play_song(self, song):
         """
         Play background music indefinitely.
@@ -553,6 +598,7 @@ class MusicPlayer():
         elif sound == comm.Message.SELF_COLLISION or sound == comm.Message.OTHER_COLLISION:
             self.self_collision.play()
 
+
 def main():
     client = Client()
     client.input_addr()
@@ -565,6 +611,7 @@ def main():
 
     game.start()
     game.game_loop()
+
 
 if __name__ == '__main__':
     main()
