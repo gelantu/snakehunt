@@ -1,28 +1,19 @@
 import os
 import socket
-import requests
 import pickle
 import pygame
 import pygame.font
 from pygame.locals import *
 import tkinter
-import random
 from threading import Thread
 from tkinter import *
 from tkinter import ttk
-import asyncio
 import sys
 
 from gamedata import *
 import comm
 
 root = Tk()
-# API key and Philadelphia coordinates
-api_key = "107cd37d3c6ad486416c606e0110450e"
-lat, lon = 39.952583, -75.165222  # Philadelphia coordinates
-
-songpath= "sound/snake_hunt.mp3"
-url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=imperial"
 
 
 def resource_path(relative_path):
@@ -130,10 +121,7 @@ class PauseMenu:
     def __init__(self, game):
         """Create the menu"""
         #self.root = Tk()
-
-        root.geometry('1050x750')
-   
-
+        root.geometry('300x300')
         self.game = game
         self.current_name = StringVar()
 
@@ -210,35 +198,6 @@ class PauseMenu:
 
         root.destroy()
 
-    def api(self, frame):
-        try:
-         response = requests.get(url)
-         response.raise_for_status()  # Check if the request was successful
-         weather_data = response.json()
-         temperature = weather_data['main']['temp']
-         humidity = weather_data['main']['humidity']
-         description = weather_data['weather'][0]['description']
-         label = ttk.Label(frame, text="Philadelphia: {}°F, Humidity: {}%".format(temperature,humidity))
-         label.pack()
-         return label
-        except requests.exceptions.RequestException as e:
-         ttk.Label(f"Error fetching weather data: {e}")
-
-
-
-    def randsong(self):
-        pathrand = random.randint(1,2)
-        pygame.mixer.pause()
-        if(pathrand == 1):
-            songpath = "sound\cream.wav"
-            radio = MusicPlayer(resource_path(songpath))
-        if(pathrand == 2):
-            songpath = "sound\ytizz.wav"
-            radio = MusicPlayer(resource_path(songpath))
-            
-        pygame.mixer.music.play(songpath)
-        pygame.mixer.music.play(-1)
-
     def populate(self):
         """
         Create the menu and its widgets
@@ -263,12 +222,6 @@ class PauseMenu:
         buttons_frame = ttk.Frame(frame)
         buttons_frame.pack(pady=5)
 
-        ttk.Button(buttons_frame, text='Play', command=self.send_name).pack(side=tkinter.LEFT, padx=3)
-        ttk.Button(buttons_frame, text='Quit', command=self.quit).pack(side=tkinter.LEFT, padx=3)
-        ttk.Button(buttons_frame, text='API', command=lambda: self.api(frame)).pack(side=tkinter.LEFT, padx=3)
-        ttk.Button(buttons_frame, text='RandSong', command=self.randsong).pack(side=tkinter.LEFT, padx=3)
-       
-
         self.snake_skin = StringVar()
         skin_options = ['Green', 'Silver', 'Golden']
         self.snake_skin.set(skin_options[0])
@@ -285,7 +238,6 @@ class PauseMenu:
             side=tkinter.LEFT, padx=3)
         ttk.Button(buttons_frame, text='Quit', command=self.quit).pack(
             side=tkinter.LEFT, padx=3)
-
 
 
 class Game():
@@ -653,7 +605,7 @@ def main():
     if not client.connect():
         return
 
-    radio = MusicPlayer(resource_path(songpath))
+    radio = MusicPlayer(resource_path("sound/snake_hunt.mp3"))
     game = Game(client, radio)
     PauseMenu(game)
 
